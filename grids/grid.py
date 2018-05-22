@@ -19,6 +19,8 @@ from grids import bindings
 import argparse
 import os
 import math
+import pathlib
+from xdg import (XDG_CACHE_HOME, XDG_CONFIG_HOME, XDG_DATA_HOME)
 
 class BindingsContainer(BoxLayout):
     def __init__(self, actions, **kwargs):
@@ -198,6 +200,13 @@ class GridApp(App):
         self._keyboard = Window.request_keyboard(self._keyboard_closed, self)
         self._keyboard.bind(on_key_down=self._on_keyboard_down)
         self.actions = bindings.keybindings()
+        self.data_dir = pathlib.PurePath(XDG_DATA_HOME, "grids")
+        self.config_dir = pathlib.PurePath(XDG_CONFIG_HOME, "grids")
+        for directory in [self.data_dir, self.config_dir]:
+            if not os.path.isdir(directory):
+                os.mkdir(directory)
+            else:
+                print("{} found".format(directory))
         if "files" in kwargs:
             self.files = kwargs["files"]
         super(GridApp, self).__init__()
