@@ -22,6 +22,7 @@ import math
 import hashlib
 import pathlib
 from xdg import (XDG_CACHE_HOME, XDG_CONFIG_HOME, XDG_DATA_HOME)
+from lxml import etree
 
 class BindingsContainer(BoxLayout):
     def __init__(self, actions, **kwargs):
@@ -83,6 +84,8 @@ class TxtPixel(ScrollView):
         self.container = None
         self.font_increment = 2
         self.scroll_increment = 0.1
+        self.source = source
+        self.source_type = source_type
         super(TxtPixel , self).__init__(**kwargs)
         container_height = 4000
         container_width = 4000
@@ -209,7 +212,9 @@ class GridApp(App):
             else:
                 print("{} found".format(directory))
         if "files" in kwargs:
-            self.files = kwargs["files"]
+            # use abspath for now when loading xml from xdg data dir
+            # may revisit to make grids more portable
+            self.files = [os.path.abspath(f) for f in kwargs["files"]]
         super(GridApp, self).__init__()
 
     def _keyboard_closed(self):
@@ -298,8 +303,47 @@ class GridApp(App):
     def grid_thumbnail(self):
         self.grid.export_to_png(str(pathlib.PurePath(self.data_dir, "{}.png".format(self.grid_hash))))
 
+    def grid_save(self):
+        root = etree.Element("grid")
+        for order, child in enumerate(self.grid.children):
+            cell = etree.Element("cell")
+            cell.set("source", child.source)
+            cell.set("source_type", child.source_type)
+            # fov
+            cell.set("scroll_x", str(child.scroll_x))
+            cell.set("scroll_y", str(child.scroll_y))
+            cell.set("position", str(order))
+            # zoom / fontsize
+
+            root.append(cell)
+        # save to file
+        et = etree.ElementTree(root)
+        file = str(pathlib.PurePath(self.data_dir, "{}.xml".format(self.grid_hash)))
+        et.write(file, pretty_print=True)
+
+    def grid_load(self, file):
+        parser = etree.XMLParser()
+        file_tree = etree.parse(file, parser)
+        file_root = file_tree.getroot()
+        cells = []
+        for element in file_root.iter("cell"):
+            if isinstance(element.tag, str):
+                # insert into list to use position when adding widgets
+                cells.insert(int(element.attrib["position"]),
+                                    TxtPixel(source=element.attrib["source"],
+                                             source_type=element.attrib["source_type"],
+                                             scroll_x=element.attrib["scroll_x"],
+                                             scroll_y=element.attrib["scroll_y"])
+                                    )
+        self.grid.rows = math.ceil(len(cells) / 2)
+        self.grid.cols = math.ceil(len(cells) / 2)
+
+        for cell in reversed(cells):
+            self.grid.add_widget(cell)
+
     def app_exit(self):
         self.grid_thumbnail()
+        self.grid_save()
         App.get_running_app().stop()
 
     def build(self):
@@ -315,7 +359,11 @@ class GridApp(App):
                        cols=math.ceil(len(self.files) / 2))
         self.grid = g
         for file in self.files:
-            self.grid.add_widget(TxtPixel(source=file, source_type="file"))
+            if file.endswith(".xml"):
+                self.grid_load(file)
+            else:
+                self.grid.add_widget(TxtPixel(source=file, source_type="file"))
+
         tab.add_widget(g)
         root.add_widget(tab)
 
