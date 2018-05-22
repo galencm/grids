@@ -15,7 +15,7 @@ from kivy.graphics import Color
 from kivy.uix.label import Label
 from kivy.uix.textinput import TextInput
 from kivy.uix.scrollview import ScrollView
-import bindings
+from grids import bindings
 
 class BindingsContainer(BoxLayout):
     def __init__(self, actions, **kwargs):
@@ -319,11 +319,14 @@ class GridApp(App):
 
         return root
 
-def file_text(file="grid.py", pad_lines=0):
+def file_text(file=None, pad_lines=0):
     contents = ""
 
-    with open(file, "r") as f:
-        contents = f.read()
+    try:
+        with open(file, "r") as f:
+            contents = f.read()
+    except TypeError:
+            pass
 
     if pad_lines:
         longest_line = len(max(contents.split("\n")))
@@ -332,6 +335,9 @@ def file_text(file="grid.py", pad_lines=0):
 
     return contents
 
-if __name__ == "__main__":
+def main():
     app = GridApp()
     app.run()
+
+if __name__ == "__main__":
+    main()
