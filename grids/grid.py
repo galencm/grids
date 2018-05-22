@@ -19,6 +19,7 @@ from grids import bindings
 import argparse
 import os
 import math
+import hashlib
 import pathlib
 from xdg import (XDG_CACHE_HOME, XDG_CONFIG_HOME, XDG_DATA_HOME)
 
@@ -290,7 +291,15 @@ class GridApp(App):
             except KeyError:
                 pass
 
+    @property
+    def grid_hash(self):
+        return hashlib.sha1("".join(self.files).encode()).hexdigest()
+
+    def grid_thumbnail(self):
+        self.grid.export_to_png(str(pathlib.PurePath(self.data_dir, "{}.png".format(self.grid_hash))))
+
     def app_exit(self):
+        self.grid_thumbnail()
         App.get_running_app().stop()
 
     def build(self):
