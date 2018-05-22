@@ -16,6 +16,9 @@ from kivy.uix.label import Label
 from kivy.uix.textinput import TextInput
 from kivy.uix.scrollview import ScrollView
 from grids import bindings
+import argparse
+import os
+import math
 
 class BindingsContainer(BoxLayout):
     def __init__(self, actions, **kwargs):
@@ -71,7 +74,7 @@ class TabItem(TabbedPanelItem):
         super(TabItem , self).__init__(**kwargs)
 
 class TxtPixel(ScrollView):
-    def __init__(self, **kwargs):
+    def __init__(self, source=None, source_type=None, **kwargs):
         Window.bind(mouse_pos=self.is_mouse_over)
         self.mouse_above = False
         self.container = None
@@ -86,7 +89,7 @@ class TxtPixel(ScrollView):
                                    size_hint_y=None,
                                    size_hint_x=None
                                    )
-        filler = Label(text=file_text(), size=(filler_width, filler_height))
+        filler = Label(text=source_text(source, source_type), size=(filler_width, filler_height))
         # set height to None so text will expand with font size
         # container needs to expand too
         # the texture_size shows correct values as font increases / decreases
@@ -195,6 +198,8 @@ class GridApp(App):
         self._keyboard = Window.request_keyboard(self._keyboard_closed, self)
         self._keyboard.bind(on_key_down=self._on_keyboard_down)
         self.actions = bindings.keybindings()
+        if "files" in kwargs:
+            self.files = kwargs["files"]
         super(GridApp, self).__init__()
 
     def _keyboard_closed(self):
@@ -288,11 +293,11 @@ class GridApp(App):
         # testing grid 2x2 with some 
         # filler content
         # could wrap in scrollview too...
-        g = GridLayout(rows=2, cols=2)
-        g.add_widget(TxtPixel())
-        g.add_widget(TxtPixel())
-        g.add_widget(TxtPixel())
-        g.add_widget(TxtPixel())
+        g = GridLayout(rows=math.ceil(len(self.files) / 2),
+                       cols=math.ceil(len(self.files) / 2))
+        self.grid = g
+        for file in self.files:
+            self.grid.add_widget(TxtPixel(source=file, source_type="file"))
         tab.add_widget(g)
         root.add_widget(tab)
 
@@ -319,24 +324,25 @@ class GridApp(App):
 
         return root
 
-def file_text(file=None, pad_lines=0):
+def source_text(source=None, source_type=None):
     contents = ""
-
-    try:
-        with open(file, "r") as f:
-            contents = f.read()
-    except TypeError:
-            pass
-
-    if pad_lines:
-        longest_line = len(max(contents.split("\n")))
-        for _ in range(pad_lines):
-            contents += "{}\n".format("_" * longest_line)
+    if source_type == "file" and os.path.isfile(source):
+        try:
+            with open(source, "r") as f:
+                contents = f.read()
+        except TypeError:
+                pass
 
     return contents
 
 def main():
-    app = GridApp()
+    files = []
+    parser = argparse.ArgumentParser()
+    parser.add_argument('files', nargs='+')
+    args = parser.parse_args()
+    files.extend(args.files)
+
+    app = GridApp(files=files)
     app.run()
 
 if __name__ == "__main__":
