@@ -236,6 +236,8 @@ class GridApp(App):
         self.actions = bindings.keybindings()
         self.data_dir = pathlib.PurePath(XDG_DATA_HOME, "grids")
         self.config_dir = pathlib.PurePath(XDG_CONFIG_HOME, "grids")
+        self.current_grid = None
+        self.previous_grid = None
         for directory in [self.data_dir, self.config_dir]:
             if not os.path.isdir(directory):
                 os.mkdir(directory)
@@ -351,11 +353,13 @@ class GridApp(App):
         file = str(pathlib.PurePath(self.data_dir, "{}.xml".format(self.grid_hash)))
         et.write(file, pretty_print=True)
 
-    def grid_load(self, file):
+    def grid_load(self, file, previous_grid=None):
+        print("grid loading: {}".format(file))
         parser = etree.XMLParser()
         file_tree = etree.parse(file, parser)
         file_root = file_tree.getroot()
         cells = []
+
         for element in file_root.iter("cell"):
             if isinstance(element.tag, str):
                 # insert into list to use position when adding widgets
@@ -370,6 +374,11 @@ class GridApp(App):
 
         for cell in reversed(cells):
             self.grid.add_widget(cell)
+
+        if previous_grid:
+            self.previous_grid = previous_grid
+
+        self.current_grid = file
 
     def app_exit(self):
         self.grid_thumbnail()
@@ -396,6 +405,7 @@ class GridApp(App):
 
         tab.add_widget(g)
         root.add_widget(tab)
+        self.current_grid = self.grid_save()
 
         bindings_container = BoxLayout(orientation="vertical",
                                        size_hint_y=None,
