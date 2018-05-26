@@ -464,22 +464,43 @@ class GridApp(App):
         return "{}.png".format(self.grid_hash)
 
     def grid_save(self):
+        grid_files = []
         root = etree.Element("grid")
         for order, child in enumerate(self.grid.children):
             cell = etree.Element("cell")
-            cell.set("source", child.source)
-            cell.set("source_type", child.source_type)
+            # since widgets are using image / bytes as source
+            # try to use link_to to substitute xml
+            try:
+                cell.set("source", child.source)
+                cell.set("source_type", child.source_type)
+                try:
+                    if child.link_to:
+                        cell.set("source", child.link_to)
+                except AttributeError:
+                    pass
+            except TypeError:
+                cell.set("source", child.link_to)
+                cell.set("source_type", "file")
             # fov
             cell.set("scroll_x", str(child.scroll_x))
             cell.set("scroll_y", str(child.scroll_y))
             cell.set("position", str(order))
-            # zoom / fontsize
+            # set zoom and font size too
+            # with open(cell.attrib["source"],'rb') as f:
+            #      cell.set("filehash", hashlib.sha1(f.read()).hexdigest())
 
+            grid_files.append(cell.attrib["source"])
             root.append(cell)
+
+        self.files = [os.path.abspath(f) for f in grid_files]
+        root.set("thumbnail", self.thumbnail)
+        self.grid_thumbnail()
         # save to file
         et = etree.ElementTree(root)
         file = str(pathlib.PurePath(self.data_dir, "{}.xml".format(self.grid_hash)))
         et.write(file, pretty_print=True)
+        print("grid saved: {}".format(file))
+        return file
 
     def grid_load(self, file, previous_grid=None):
         print("grid loading: {}".format(file))
@@ -491,12 +512,41 @@ class GridApp(App):
         for element in file_root.iter("cell"):
             if isinstance(element.tag, str):
                 # insert into list to use position when adding widgets
-                cells.insert(int(element.attrib["position"]),
-                                    TxtPixel(source=element.attrib["source"],
-                                             source_type=element.attrib["source_type"],
-                                             scroll_x=element.attrib["scroll_x"],
-                                             scroll_y=element.attrib["scroll_y"])
-                                    )
+                thumbnail = None
+                if element.attrib["source"].endswith(".xml"):
+                    thumbnail = None
+                    thumbnail = str(pathlib.PurePath(self.data_dir, element.attrib["source"].replace(".xml", ".png")))
+                    source_type = "file"
+                    if not os.path.isfile(thumbnail):
+                        # generate a thumbnail representation with PIL
+                        file_root = etree.parse(element.attrib["source"]).getroot()
+                        thumbnail = grid_representation_img(file_root)
+                        source_type = "bytes"
+
+                    if thumbnail:
+                        cells.insert(int(element.attrib["position"]),
+                                        ImgPixel(source=thumbnail,
+                                                 source_type=source_type,
+                                                 link_to=element.attrib["source"],
+                                                 scroll_x=element.attrib["scroll_x"],
+                                                 scroll_y=element.attrib["scroll_y"],
+                                                 app=self))
+                    else:
+                        cells.insert(int(element.attrib["position"]),
+                                            TxtPixel(source=element.attrib["source"],
+                                                     source_type=element.attrib["source_type"],
+                                                     scroll_x=element.attrib["scroll_x"],
+                                                     scroll_y=element.attrib["scroll_y"],
+                                                     app=self)
+                                            )
+                else:
+                    cells.insert(int(element.attrib["position"]),
+                                        TxtPixel(source=element.attrib["source"],
+                                                 source_type=element.attrib["source_type"],
+                                                 scroll_x=element.attrib["scroll_x"],
+                                                 scroll_y=element.attrib["scroll_y"],
+                                                 app=self)
+                                        )
         self.grid.rows = math.ceil(len(cells) / 2)
         self.grid.cols = math.ceil(len(cells) / 2)
 
@@ -526,10 +576,31 @@ class GridApp(App):
                        cols=math.ceil(len(self.files) / 2))
         self.grid = g
         for file in self.files:
-            if file.endswith(".xml"):
+            if file.endswith(".xml") and len(self.files) == 1:
                 self.grid_load(file)
+            elif file.endswith(".xml") and len(self.files) > 1:
+                tree = etree.parse(file)
+                file_root = tree.getroot()
+                thumbnail = None
+                for element in file_root.iter("grid"):
+                    if isinstance(element.tag, str):
+                        # try to use
+                        try:
+                            thumbnail = str(pathlib.PurePath(self.data_dir, element.attrib["thumbnail"]))
+                            source_type = "file"
+                        except:
+                            # generate a thumbnail representation with PIL
+                            thumbnail = grid_representation_img(file_root)
+                            source_type = "bytes"
+                # self.grid_load(file)
+                # check if grid
+                # if grid try to get thumbnail
+                if thumbnail:
+                    self.grid.add_widget(ImgPixel(source=thumbnail, source_type=source_type, link_to=file, app=self))
+                else:
+                    self.grid.add_widget(TxtPixel(source=file, source_type="file", app=self))
             else:
-                self.grid.add_widget(TxtPixel(source=file, source_type="file"))
+                self.grid.add_widget(TxtPixel(source=file, source_type="file", app=self))
 
         tab.add_widget(g)
         root.add_widget(tab)
