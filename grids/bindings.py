@@ -27,6 +27,8 @@ def keybindings():
     actions["grid"]["pan_down"] = [["d"], []]
     actions["grid"]["pan_left"] = [["s"], []]
     actions["grid"]["pan_right"] = [["f"], []]
+    actions["grid"]["punch_in"] = [["e"], ["shift"]]
+    actions["grid"]["punch_out"] = [["d"], ["shift"]]
 
 
     return actions
