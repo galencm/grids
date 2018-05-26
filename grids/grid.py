@@ -15,9 +15,11 @@ from kivy.graphics import Color, Rectangle
 from kivy.uix.label import Label
 from kivy.uix.textinput import TextInput
 from kivy.uix.scrollview import ScrollView
+from PIL import Image as PILImage, ImageDraw, ImageColor
 from grids import bindings
 import argparse
 import os
+import io
 import math
 import hashlib
 import pathlib
@@ -428,6 +430,47 @@ def source_text(source=None, source_type=None):
                 pass
 
     return contents
+
+def grid_representation_img(grid_xml):
+    cells = []
+    img_cell_width = 200
+    img_cell_height = 200
+    img_background_color=(0, 0, 0, 255)
+
+    for grid in grid_xml.iter("grid"):
+        for cell in grid.iter("cell"):
+            cells.append(cell.attrib["source"])
+    # generate a thumbnail image...
+    img_rows = math.ceil(len(cells) / 2)
+    img_cols = math.ceil(len(cells) / 2)
+    img_width = img_cols * img_cell_width
+    img_height = img_rows * img_cell_height
+
+    representation_img = PILImage.new('RGB', (img_width, img_height), img_background_color)
+    draw = ImageDraw.Draw(representation_img, 'RGBA')
+    x = 0
+    y = 0
+    row = 0
+    col = 0
+    for cell in cells:
+        draw.rectangle([x, y, x + img_cell_width, y + img_cell_height], outline=(255, 255, 255, 255))
+        draw.text((x + int(img_cell_width / 4), y + int(img_cell_height / 2)), str(cell))
+        col += 1
+        if col > img_cols:
+            y += img_cell_width
+            x = 0
+            col = 0
+        else:
+            x += img_cell_width
+    #representation_img.show()
+
+    file = io.BytesIO()
+    extension = 'JPEG'
+    representation_img.save(file, extension)
+    representation_img.close()
+    file.seek(0)
+
+    return file
 
 def main():
     files = []
