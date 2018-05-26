@@ -10,6 +10,8 @@ from kivy.uix.gridlayout import GridLayout
 from kivy.uix.tabbedpanel import TabbedPanel, TabbedPanelItem
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.floatlayout import FloatLayout
+from kivy.uix.image import Image
+from kivy.core.image import Image as CoreImage
 from kivy.graphics.vertex_instructions import Line
 from kivy.graphics import Color, Rectangle
 from kivy.uix.label import Label
@@ -172,6 +174,115 @@ class TxtPixel(ScrollView):
                     #     self.container.height = c.texture_size[1]
             except Exception as ex:
                 print(ex)
+
+    def jump(self, override_above=False):
+        if self.mouse_above is True or override_above is True:
+            for c in self.container.children:
+                self.scroll_x = c.center[0] / self.container.width
+                self.scroll_y = c.center[1] / self.container.height
+                with self.container.canvas:
+                    self.container.canvas.remove_group("trace")
+                    # scale line width with zoom / textsize
+                    line_width = 100
+                    Color(1, 1, 1, .05)
+                    edge_width = c.width / 4
+                    edge_height = c.height / 4
+                    # print(c.texture_size, c.center)
+                    Line(points=(0, 0, c.center[0], c.center[1]), width=line_width, group="trace")
+                    Line(points=(self.container.height, 0, c.center[0], c.center[1]), width=line_width, group="trace")
+                    Line(points=(self.container.height, self.container.width, c.center[0], c.center[1]), width=line_width, group="trace")
+                    Line(points=(0, self.container.width, c.center[0], c.center[1]), width=line_width, group="trace")
+
+    def pan_up_left(self):
+        if self.mouse_above is True:
+            self.scroll_y += self.scroll_increment
+            self.scroll_x -= self.scroll_increment
+
+    def pan_up_right(self):
+        if self.mouse_above is True:
+            self.scroll_y += self.scroll_increment
+            self.scroll_x += self.scroll_increment
+
+    def pan_down_left(self):
+        if self.mouse_above is True:
+            self.scroll_y -= self.scroll_increment
+            self.scroll_x -= self.scroll_increment
+
+    def pan_down_right(self):
+        if self.mouse_above is True:
+            self.scroll_y -= self.scroll_increment
+            self.scroll_x += self.scroll_increment
+
+    def pan_up(self):
+        if self.mouse_above is True:
+            self.scroll_y += self.scroll_increment
+
+    def pan_down(self):
+        if self.mouse_above is True:
+            self.scroll_y -= self.scroll_increment
+
+    def pan_left(self):
+        if self.mouse_above is True:
+            self.scroll_x -= self.scroll_increment
+
+    def pan_right(self):
+        if self.mouse_above is True:
+            self.scroll_x += self.scroll_increment
+
+    def punch_in(self):
+        if self.mouse_above is True:
+            if self.link_to:
+                # save grid first to store x and y positions
+                current_grid = self.app.grid_save()
+                self.app.grid.clear_widgets()
+                self.app.grid_load(self.link_to, previous_grid=current_grid)
+
+    def punch_out(self):
+        if self.mouse_above is True:
+            if self.app.previous_grid:
+                current_grid = self.app.grid_save()
+                self.app.grid.clear_widgets()
+                self.app.grid_load(self.app.previous_grid, previous_grid=current_grid)
+
+class ImgPixel(ScrollView):
+    def __init__(self, source=None, source_type=None, link_to=None, app=None, **kwargs):
+        Window.bind(mouse_pos=self.is_mouse_over)
+        self.mouse_above = False
+        self.container = None
+        self.font_increment = 2
+        self.scroll_increment = 0.1
+        self.source = source
+        self.source_type = source_type
+        self.link_to = link_to
+        self.app = app
+        super(ImgPixel , self).__init__(**kwargs)
+        container_height = 4000
+        container_width = 4000
+        grid_container = FloatLayout(
+                                   size_hint_y=None,
+                                   size_hint_x=None
+                                   )
+        if source_type == "file":
+            img = Image(source=source)
+            # reload cache if thumbnail has changed
+            img.reload()
+        elif source_type == "bytes":
+            img = Image()
+            img.texture = CoreImage(source, ext="jpg").texture
+            img.size = img.texture_size
+
+        grid_container.add_widget(img)
+        img.size = img.texture_size
+        grid_container.height = container_height
+        grid_container.width = container_width
+        self.container = grid_container
+        self.add_widget(grid_container)
+
+    def is_mouse_over(self, instance, value):
+        if self.collide_point(*value):
+            self.mouse_above = True
+        else:
+            self.mouse_above = False
 
     def jump(self, override_above=False):
         if self.mouse_above is True or override_above is True:
