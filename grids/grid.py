@@ -108,7 +108,7 @@ class BgGridLayout(GridLayout):
             pass
 
 class TxtPixel(ScrollView):
-    def __init__(self, source=None, source_type=None, **kwargs):
+    def __init__(self, source=None, source_type=None, app=None, **kwargs):
         Window.bind(mouse_pos=self.is_mouse_over)
         self.mouse_above = False
         self.container = None
@@ -116,6 +116,7 @@ class TxtPixel(ScrollView):
         self.scroll_increment = 0.1
         self.source = source
         self.source_type = source_type
+        self.app = app
         super(TxtPixel , self).__init__(**kwargs)
         container_height = 4000
         container_width = 4000
@@ -172,8 +173,8 @@ class TxtPixel(ScrollView):
             except Exception as ex:
                 print(ex)
 
-    def jump(self):
-        if self.mouse_above is True:
+    def jump(self, override_above=False):
+        if self.mouse_above is True or override_above is True:
             for c in self.container.children:
                 self.scroll_x = c.center[0] / self.container.width
                 self.scroll_y = c.center[1] / self.container.height
@@ -226,8 +227,20 @@ class TxtPixel(ScrollView):
         if self.mouse_above is True:
             self.scroll_x += self.scroll_increment
 
-class ImgPixel():
-    pass
+    def punch_in(self):
+        if self.mouse_above is True:
+            if self.link_to:
+                # save grid first to store x and y positions
+                current_grid = self.app.grid_save()
+                self.app.grid.clear_widgets()
+                self.app.grid_load(self.link_to, previous_grid=current_grid)
+
+    def punch_out(self):
+        if self.mouse_above is True:
+            if self.app.previous_grid:
+                current_grid = self.app.grid_save()
+                self.app.grid.clear_widgets()
+                self.app.grid_load(self.app.previous_grid, previous_grid=current_grid)
 
 class GridApp(App):
     def __init__(self, *args, **kwargs):
