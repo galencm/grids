@@ -457,7 +457,11 @@ class GridApp(App):
         return hashlib.sha1("".join(sorted(self.files)).encode()).hexdigest()
 
     def grid_thumbnail(self):
-        self.grid.export_to_png(str(pathlib.PurePath(self.data_dir, "{}.png".format(self.grid_hash))))
+        self.grid.export_to_png(str(pathlib.PurePath(self.data_dir, self.thumbnail)))
+
+    @property
+    def thumbnail(self):
+        return "{}.png".format(self.grid_hash)
 
     def grid_save(self):
         root = etree.Element("grid")
