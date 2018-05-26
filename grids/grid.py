@@ -454,7 +454,7 @@ class GridApp(App):
 
     @property
     def grid_hash(self):
-        return hashlib.sha1("".join(self.files).encode()).hexdigest()
+        return hashlib.sha1("".join(sorted(self.files)).encode()).hexdigest()
 
     def grid_thumbnail(self):
         self.grid.export_to_png(str(pathlib.PurePath(self.data_dir, "{}.png".format(self.grid_hash))))
