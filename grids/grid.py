@@ -11,7 +11,7 @@ from kivy.uix.tabbedpanel import TabbedPanel, TabbedPanelItem
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.floatlayout import FloatLayout
 from kivy.graphics.vertex_instructions import Line
-from kivy.graphics import Color
+from kivy.graphics import Color, Rectangle
 from kivy.uix.label import Label
 from kivy.uix.textinput import TextInput
 from kivy.uix.scrollview import ScrollView
@@ -77,6 +77,34 @@ class TabItem(TabbedPanelItem):
         self.sub_content = []
         super(TabItem , self).__init__(**kwargs)
 
+class BgLabel(Label):
+    # label with custom background color
+    def __init__(self, **kwargs):
+        super(BgLabel , self).__init__(**kwargs)
+
+    def on_size(self, *args):
+        try:
+            self.canvas.before.clear()
+            with self.canvas.before:
+                Color(.15, .15, .15, 1)
+                Rectangle(pos=self.pos, size=self.size)
+        except AttributeError:
+            pass
+
+class BgGridLayout(GridLayout):
+    # grid layout with custom background color
+    def __init__(self, **kwargs):
+        super(BgGridLayout , self).__init__(**kwargs)
+
+    def on_size(self, *args):
+        try:
+            self.canvas.before.clear()
+            with self.canvas.before:
+                Color(.15, .15, .15, 1)
+                Rectangle(pos=self.pos, size=self.size)
+        except AttributeError:
+            pass
+
 class TxtPixel(ScrollView):
     def __init__(self, source=None, source_type=None, **kwargs):
         Window.bind(mouse_pos=self.is_mouse_over)
@@ -95,7 +123,7 @@ class TxtPixel(ScrollView):
                                    size_hint_y=None,
                                    size_hint_x=None
                                    )
-        filler = Label(text=source_text(source, source_type), size=(filler_width, filler_height))
+        filler = BgLabel(text=source_text(source, source_type), size=(filler_width, filler_height))
         # set height to None so text will expand with font size
         # container needs to expand too
         # the texture_size shows correct values as font increases / decreases
@@ -355,7 +383,7 @@ class GridApp(App):
         # testing grid 2x2 with some 
         # filler content
         # could wrap in scrollview too...
-        g = GridLayout(rows=math.ceil(len(self.files) / 2),
+        g = BgGridLayout(rows=math.ceil(len(self.files) / 2),
                        cols=math.ceil(len(self.files) / 2))
         self.grid = g
         for file in self.files:
