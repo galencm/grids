@@ -547,8 +547,13 @@ class GridApp(App):
                                                  scroll_y=element.attrib["scroll_y"],
                                                  app=self)
                                         )
-        self.grid.rows = math.ceil(len(cells) / 2)
-        self.grid.cols = math.ceil(len(cells) / 2)
+        rows = math.ceil(len(cells) / 2)
+        cols = math.ceil(len(cells) / 2)
+        if len(cells) == 2:
+            cols += 1
+
+        self.grid.rows = rows
+        self.grid.cols = cols
 
         for cell in reversed(cells):
             self.grid.add_widget(cell)
@@ -572,8 +577,15 @@ class GridApp(App):
         # testing grid 2x2 with some 
         # filler content
         # could wrap in scrollview too...
-        g = BgGridLayout(rows=math.ceil(len(self.files) / 2),
-                       cols=math.ceil(len(self.files) / 2))
+        rows = math.ceil(len(self.files) / 2)
+        cols = math.ceil(len(self.files) / 2)
+        # if only two items, grid will split
+        # with rows or columns first
+        if len(self.files) == 2:
+            cols += 1
+
+        g = BgGridLayout(rows=rows,
+                       cols=cols)
         self.grid = g
         for file in self.files:
             if file.endswith(".xml") and len(self.files) == 1:
