@@ -510,27 +510,44 @@ class GridApp(App):
         cells = []
 
         for element in file_root.iter("cell"):
-            if isinstance(element.tag, str):
-                # insert into list to use position when adding widgets
-                thumbnail = None
-                if element.attrib["source"].endswith(".xml"):
+            try:
+                if isinstance(element.tag, str):
+                    # insert into list to use position when adding widgets
                     thumbnail = None
-                    thumbnail = str(pathlib.PurePath(self.data_dir, element.attrib["source"].replace(".xml", ".png")))
-                    source_type = "file"
-                    if not os.path.isfile(thumbnail):
-                        # generate a thumbnail representation with PIL
-                        file_root = etree.parse(element.attrib["source"]).getroot()
-                        thumbnail = grid_representation_img(file_root)
-                        source_type = "bytes"
+                    if element.attrib["source"].endswith(".xml"):
+                        thumbnail = None
+                        thumbnail = str(pathlib.PurePath(self.data_dir, element.attrib["source"].replace(".xml", ".png")))
+                        source_type = "file"
+                        if not os.path.isfile(thumbnail):
+                            # generate a thumbnail representation with PIL
+                            file_root = etree.parse(element.attrib["source"]).getroot()
+                            thumbnail = grid_representation_img(file_root)
+                            source_type = "bytes"
 
-                    if thumbnail:
+                        if thumbnail:
+                            cells.insert(int(element.attrib["position"]),
+                                            ImgPixel(source=thumbnail,
+                                                     source_type=source_type,
+                                                     link_to=element.attrib["source"],
+                                                     scroll_x=element.attrib["scroll_x"],
+                                                     scroll_y=element.attrib["scroll_y"],
+                                                     app=self))
+                        else:
+                            cells.insert(int(element.attrib["position"]),
+                                                TxtPixel(source=element.attrib["source"],
+                                                         source_type=element.attrib["source_type"],
+                                                         scroll_x=element.attrib["scroll_x"],
+                                                         scroll_y=element.attrib["scroll_y"],
+                                                         app=self)
+                                                )
+                    elif element.attrib["source"].endswith(".png") or element.attrib["source"].endswith(".jpg"):
                         cells.insert(int(element.attrib["position"]),
-                                        ImgPixel(source=thumbnail,
-                                                 source_type=source_type,
-                                                 link_to=element.attrib["source"],
-                                                 scroll_x=element.attrib["scroll_x"],
-                                                 scroll_y=element.attrib["scroll_y"],
-                                                 app=self))
+                                            ImgPixel(source=element.attrib["source"],
+                                                     source_type=element.attrib["source_type"],
+                                                     scroll_x=element.attrib["scroll_x"],
+                                                     scroll_y=element.attrib["scroll_y"],
+                                                     app=self)
+                                            )
                     else:
                         cells.insert(int(element.attrib["position"]),
                                             TxtPixel(source=element.attrib["source"],
@@ -539,14 +556,9 @@ class GridApp(App):
                                                      scroll_y=element.attrib["scroll_y"],
                                                      app=self)
                                             )
-                else:
-                    cells.insert(int(element.attrib["position"]),
-                                        TxtPixel(source=element.attrib["source"],
-                                                 source_type=element.attrib["source_type"],
-                                                 scroll_x=element.attrib["scroll_x"],
-                                                 scroll_y=element.attrib["scroll_y"],
-                                                 app=self)
-                                        )
+            except Exception as ex:
+                print(ex)
+
         rows = math.ceil(len(cells) / 2)
         cols = math.ceil(len(cells) / 2)
         if len(cells) == 2:
@@ -611,6 +623,8 @@ class GridApp(App):
                     self.grid.add_widget(ImgPixel(source=thumbnail, source_type=source_type, link_to=file, app=self))
                 else:
                     self.grid.add_widget(TxtPixel(source=file, source_type="file", app=self))
+            elif file.endswith(".png") or file.endswith(".jpg"):
+                self.grid.add_widget(ImgPixel(source=file, source_type="file", app=self))
             else:
                 self.grid.add_widget(TxtPixel(source=file, source_type="file", app=self))
 
