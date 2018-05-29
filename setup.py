@@ -11,7 +11,7 @@ name="grids",
     data_files = [("", ["LICENSE.txt"])],
     url="",
     packages=find_packages(),
-    install_requires=[],
+    install_requires=["Kivy", "Pillow", "xdg"],
     entry_points = {'console_scripts': ['gg = grids.grid:main',
                                         'grids = grids.grid:main'
                                         ],
