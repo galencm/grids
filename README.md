@@ -15,7 +15,7 @@ grids
 
 Pip:
 ```
-pip3 install git+https://github.com/galencm/word-sea --user
+pip3 install git+https://github.com/galencm/grids --user
 ```
 
 Clone / download:
