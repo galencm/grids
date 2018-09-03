@@ -251,6 +251,7 @@ class ImgPixel(ScrollView):
         self.container = None
         self.font_increment = 2
         self.scroll_increment = 0.1
+        self.zoom_increment = 1.25
         self.source = source
         self.source_type = source_type
         self.link_to = link_to
@@ -273,6 +274,8 @@ class ImgPixel(ScrollView):
 
         grid_container.add_widget(img)
         img.size = img.texture_size
+        img.allow_stretch = True
+        img.keep_ratio = False
         grid_container.height = container_height
         grid_container.width = container_width
         self.container = grid_container
@@ -283,6 +286,28 @@ class ImgPixel(ScrollView):
             self.mouse_above = True
         else:
             self.mouse_above = False
+
+    def enlarge(self):
+        if self.mouse_above is True:
+            try:
+                # works where adjusting child size does not
+                # however means that image becomes anchored
+                # in upper left corner as container shrinks
+                self.container.width *= self.zoom_increment
+                self.container.height *= self.zoom_increment
+            except Exception as ex:
+                print(ex)
+
+    def shrink(self):
+        if self.mouse_above is True:
+            try:
+                # works where adjusting child size does not
+                # however means that image becomes anchored
+                # in upper left corner as container shrinks
+                self.container.width /= self.zoom_increment
+                self.container.height /= self.zoom_increment
+            except Exception as ex:
+                print(ex)
 
     def jump(self, override_above=False):
         if self.mouse_above is True or override_above is True:
