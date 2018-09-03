@@ -314,18 +314,6 @@ class ImgPixel(ScrollView):
             for c in self.container.children:
                 self.scroll_x = c.center[0] / self.container.width
                 self.scroll_y = c.center[1] / self.container.height
-                with self.container.canvas:
-                    self.container.canvas.remove_group("trace")
-                    # scale line width with zoom / textsize
-                    line_width = 100
-                    Color(1, 1, 1, .05)
-                    edge_width = c.width / 4
-                    edge_height = c.height / 4
-                    # print(c.texture_size, c.center)
-                    Line(points=(0, 0, c.center[0], c.center[1]), width=line_width, group="trace")
-                    Line(points=(self.container.height, 0, c.center[0], c.center[1]), width=line_width, group="trace")
-                    Line(points=(self.container.height, self.container.width, c.center[0], c.center[1]), width=line_width, group="trace")
-                    Line(points=(0, self.container.width, c.center[0], c.center[1]), width=line_width, group="trace")
 
     def pan_up_left(self):
         if self.mouse_above is True:
