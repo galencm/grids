@@ -27,6 +27,7 @@ import math
 import hashlib
 import datetime
 import pathlib
+import uuid
 import redis
 from xdg import (XDG_CACHE_HOME, XDG_CONFIG_HOME, XDG_DATA_HOME)
 from lxml import etree
@@ -381,6 +382,12 @@ class GridApp(App):
         self.save_interval = 10
         self.current_thumbnail_hash = None
         self.use_db = False
+        self.session_uuid = None
+
+        if "unique_session" in kwargs:
+            if kwargs["unique_session"] is True:
+                self.session_uuid = str(uuid.uuid4())
+
         for directory in [self.data_dir, self.config_dir]:
             if not os.path.isdir(directory):
                 os.mkdir(directory)
@@ -503,12 +510,19 @@ class GridApp(App):
     def db_save(self, thumbnail_filename, grid_hash):
         slurped = []
         binary_blob_prefix = "binary:"
-        blob_uuid = grid_hash
+        if self.session_uuid is None:
+            blob_uuid = grid_hash
+        else:
+            blob_uuid = self.session_uuid
+
         blob_uuid = binary_blob_prefix + blob_uuid
         self.binary_r.set(blob_uuid, self.file_bytes(thumbnail_filename))
 
         glworb = {}
-        glworb['uuid'] = grid_hash
+        if self.session_uuid is None:
+            glworb['uuid'] = grid_hash
+        else:
+            glworb['uuid'] = self.session_uuid
         glworb['binary_key'] = blob_uuid
         glworb['created'] = str(datetime.datetime.now())
         glworb['slurp_method'] = "grids"#self.slurp_method
@@ -792,6 +806,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('files', nargs='+')
     parser.add_argument("--use-db",  action="store_true", help="save grids to db in a machinic format")
+    parser.add_argument("--unique-session",  action="store_true", help="assign db grids a unique uuid instead of grid hash")
     parser.add_argument("--db-host",  default="127.0.0.1", help="db host ip")
     parser.add_argument("--db-port", default="6379", type=int, help="db port")
 
