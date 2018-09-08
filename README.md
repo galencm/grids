@@ -2,22 +2,32 @@
 
 ## Usage
 
+**create a grid:**
+
 ```
-grids 1.jpg 2.jpg 3.jpg animated.gif
+grids 1.jpg 2.jpg 3.jpg animated.gif foo.txt
 ```
 
 or
 
 ```
-gg 1.jpg 2.jpg 3.jpg animated.gif
+gg 1.jpg 2.jpg 3.jpg animated.gif foo.txt
 ```
 
-Grids consist of two files, they are stored in $XDG_DATA_HOME/grids and are named with with the grid hash and their extension.
-* The grid hash is an sha1 hash of the string of the list of files in the grid sorted and then concatenated
+**store grid visual-state on db (for machinic):**
+
+```
+gg *.jpg --use-db
+```
+
+**on grids**
+
+Grids consist of two files, they are stored in $XDG_DATA_HOME/grids and are named with with the _grid hash_ and their extension.
+* The _grid hash_ is an sha1 hash of the string of the list of files in the grid sorted and then concatenated
 * _grid hash_.xml: xml file containing grid contents and state
 * _grid hash_.png: a fullsized image of the current visual state of the grid. Use when nesting grids or store in a database for use with machinic programs.  
 
-loading some grids (location depends on $XDG_DATA_HOME):
+**load some grids** (location depends on $XDG_DATA_HOME):
 
 ```
 cd ~/.local/share/grids
