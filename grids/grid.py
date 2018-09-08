@@ -17,6 +17,7 @@ from kivy.graphics import Color, Rectangle
 from kivy.uix.label import Label
 from kivy.uix.textinput import TextInput
 from kivy.uix.scrollview import ScrollView
+from kivy.clock import Clock
 from PIL import Image as PILImage, ImageDraw, ImageColor
 from grids import bindings
 import argparse
@@ -24,7 +25,9 @@ import os
 import io
 import math
 import hashlib
+import datetime
 import pathlib
+import redis
 from xdg import (XDG_CACHE_HOME, XDG_CONFIG_HOME, XDG_DATA_HOME)
 from lxml import etree
 
@@ -375,6 +378,9 @@ class GridApp(App):
         self.config_dir = pathlib.PurePath(XDG_CONFIG_HOME, "grids")
         self.current_grid = None
         self.previous_grid = None
+        self.save_interval = 10
+        self.current_thumbnail_hash = None
+        self.use_db = False
         for directory in [self.data_dir, self.config_dir]:
             if not os.path.isdir(directory):
                 os.mkdir(directory)
@@ -384,6 +390,15 @@ class GridApp(App):
             # use abspath for now when loading xml from xdg data dir
             # may revisit to make grids more portable
             self.files = [os.path.abspath(f) for f in kwargs["files"]]
+
+        if kwargs["use_db"]:
+            self.use_db = True
+            db_settings = {"host" :  kwargs["db_host"], "port" : kwargs["db_port"]}
+            self.binary_r = redis.StrictRedis(**db_settings)
+            self.redis_conn = redis.StrictRedis(**db_settings, decode_responses=True)
+            self.db_port = self.redis_conn.connection_pool.connection_kwargs["port"]
+            self.db_host = self.redis_conn.connection_pool.connection_kwargs["host"]
+
         super(GridApp, self).__init__()
 
     def _keyboard_closed(self):
@@ -476,6 +491,39 @@ class GridApp(App):
     def thumbnail(self):
         return "{}.png".format(self.grid_hash)
 
+    def file_bytes(self, filename, delete_file=False):
+            contents = io.BytesIO()
+
+            with open(filename, "rb") as f:
+                contents = io.BytesIO(f.read())
+
+            contents = contents.getvalue()
+            return contents
+
+    def db_save(self, thumbnail_filename, grid_hash):
+        slurped = []
+        binary_blob_prefix = "binary:"
+        blob_uuid = grid_hash
+        blob_uuid = binary_blob_prefix + blob_uuid
+        self.binary_r.set(blob_uuid, self.file_bytes(thumbnail_filename))
+
+        glworb = {}
+        glworb['uuid'] = grid_hash
+        glworb['binary_key'] = blob_uuid
+        glworb['created'] = str(datetime.datetime.now())
+        glworb['slurp_method'] = "grids"#self.slurp_method
+        # try:
+        #     glworb['slurp_source_uid'] = device['uid']
+        #     glworb['slurp_source_name'] =  device['name']
+        # except:
+        #     pass
+        # for k, v in metadata.items():
+        #     glworb[k] = v
+        glworb_uuid = "glworb:{}".format(glworb['uuid'])
+        self.redis_conn.hmset(glworb_uuid, glworb)
+        slurped.append(glworb_uuid)
+        return slurped
+
     def grid_save(self):
         grid_files = []
         root = etree.Element("grid")
@@ -513,6 +561,17 @@ class GridApp(App):
         file = str(pathlib.PurePath(self.data_dir, "{}.xml".format(self.grid_hash)))
         et.write(file, pretty_print=True)
         print("grid saved: {}".format(file))
+        # only save to db if image has changed
+        # use glworb:grid_hash by default
+        # use binary:grid_hash by default to overwrite
+        thumbnail_fullpath = str(pathlib.PurePath(self.data_dir, self.thumbnail))
+        thumbnail_hash = hashlib.sha1(self.file_bytes(thumbnail_fullpath)).hexdigest()
+        if thumbnail_hash != self.current_thumbnail_hash:
+            # hash has changed saving grid to db
+            if self.use_db:
+                self.db_save(thumbnail_fullpath, self.grid_hash)
+                self.current_thumbnail_hash = thumbnail_hash
+
         return file
 
     def grid_load(self, file, previous_grid=None):
@@ -645,6 +704,8 @@ class GridApp(App):
         root.add_widget(tab)
         self.current_grid = self.grid_save()
 
+        Clock.schedule_interval(lambda dt: self.grid_save(), self.save_interval)
+
         bindings_container = BoxLayout(orientation="vertical",
                                        size_hint_y=None,
                                        )
@@ -724,11 +785,12 @@ def main():
     files = []
     parser = argparse.ArgumentParser()
     parser.add_argument('files', nargs='+')
+    parser.add_argument("--use-db",  action="store_true", help="save grids to db in a machinic format")
+    parser.add_argument("--db-host",  default="127.0.0.1", help="db host ip")
+    parser.add_argument("--db-port", default="6379", type=int, help="db port")
+
     args = parser.parse_args()
     files.extend(args.files)
 
-    app = GridApp(files=files)
+    app = GridApp(**vars(args))
     app.run()
-
-if __name__ == "__main__":
-    main()
