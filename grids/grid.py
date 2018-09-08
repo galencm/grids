@@ -612,7 +612,10 @@ class GridApp(App):
                                                          scroll_y=element.attrib["scroll_y"],
                                                          app=self)
                                                 )
-                    elif element.attrib["source"].endswith(".png") or element.attrib["source"].endswith(".jpg") or element.attrib["source"].endswith(".gif"):
+                    elif element.attrib["source"].lower().endswith(".png")     \
+                         or element.attrib["source"].lower().endswith(".jpg")  \
+                         or element.attrib["source"].lower().endswith(".jpeg") \
+                         or element.attrib["source"].lower().endswith(".gif"):
                         cells.insert(int(element.attrib["position"]),
                                             ImgPixel(source=element.attrib["source"],
                                                      source_type=element.attrib["source_type"],
@@ -695,7 +698,10 @@ class GridApp(App):
                     self.grid.add_widget(ImgPixel(source=thumbnail, source_type=source_type, link_to=file, app=self))
                 else:
                     self.grid.add_widget(TxtPixel(source=file, source_type="file", app=self))
-            elif file.endswith(".png") or file.endswith(".jpg") or file.endswith(".gif"):
+            elif file.lower().endswith(".png")     \
+                 or file.lower().endswith(".jpg")  \
+                 or file.lower().endswith(".jpeg") \
+                 or file.lower().endswith(".gif"):
                 self.grid.add_widget(ImgPixel(source=file, source_type="file", app=self))
             else:
                 self.grid.add_widget(TxtPixel(source=file, source_type="file", app=self))
