@@ -53,6 +53,13 @@ cd grids
 pip3 install --editable ./ --user
 ```
 
+Setup Linting and Formatting git hooks
+```
+cd grids
+pre-commit install
+pre-commit install -t commit-msg
+```
+
 ## Contributing
 This project uses the C4 process
 

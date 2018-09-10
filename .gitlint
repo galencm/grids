@@ -1,0 +1,8 @@
+[T1]
+line-length=50
+
+[B1]
+line-length=60
+
+[body-min-length]
+min-length=5
