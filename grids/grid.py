@@ -669,6 +669,10 @@ class GridApp(App):
         self.grid_save()
         App.get_running_app().stop()
 
+    def center_cells(self, widget):
+        for child in widget.content.children:
+            child.jump(override_above=True)
+
     def build(self):
         root = TabbedPanel(do_default_tab=False)
         self.root = root
@@ -724,6 +728,7 @@ class GridApp(App):
         root.add_widget(tab)
         self.current_grid = self.grid_save()
 
+        Clock.schedule_once(lambda x, tab=tab: self.center_cells(tab), 1)
         Clock.schedule_interval(lambda dt: self.grid_save(), self.save_interval)
 
         bindings_container = BoxLayout(orientation="vertical",
