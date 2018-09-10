@@ -29,8 +29,9 @@ import datetime
 import pathlib
 import uuid
 import redis
-from xdg import (XDG_CACHE_HOME, XDG_CONFIG_HOME, XDG_DATA_HOME)
+from xdg import XDG_CACHE_HOME, XDG_CONFIG_HOME, XDG_DATA_HOME
 from lxml import etree
+
 
 class BindingsContainer(BoxLayout):
     def __init__(self, actions, **kwargs):
@@ -42,10 +43,13 @@ class BindingsContainer(BoxLayout):
         for domain, domain_actions in self.actions.items():
             self.add_widget(Label(text=str(domain), height=40))
             for action, action_bindings in domain_actions.items():
-                binding_widget = BindingItem(domain, action, action_bindings, self.actions, height=40)
+                binding_widget = BindingItem(
+                    domain, action, action_bindings, self.actions, height=40
+                )
                 self.add_widget(binding_widget)
                 actions += 1
         self.height = actions * 40
+
 
 class BindingItem(BoxLayout):
     def __init__(self, domain, action, action_keybindings, actions, **kwargs):
@@ -58,10 +62,17 @@ class BindingItem(BoxLayout):
         self.action = action
         self.actions = actions
         self.action_label = Label(text=str(self.action), height=40)
-        self.keys_input = TextInput(text=str(",".join(self.keys)), multiline=False, height=40, size_hint_x=0.2)
-        self.keys_input.bind(on_text_validate = lambda widget: self.set_binding())
-        self.modifiers_input = TextInput(text=str(",".join(self.modifiers)), multiline=False, height=40, size_hint_x=0.2)
-        self.modifiers_input.bind(on_text_validate = lambda widget: self.set_binding())
+        self.keys_input = TextInput(
+            text=str(",".join(self.keys)), multiline=False, height=40, size_hint_x=0.2
+        )
+        self.keys_input.bind(on_text_validate=lambda widget: self.set_binding())
+        self.modifiers_input = TextInput(
+            text=str(",".join(self.modifiers)),
+            multiline=False,
+            height=40,
+            size_hint_x=0.2,
+        )
+        self.modifiers_input.bind(on_text_validate=lambda widget: self.set_binding())
         super(BindingItem, self).__init__()
         self.add_widget(self.action_label)
         self.add_widget(self.keys_input)
@@ -69,7 +80,7 @@ class BindingItem(BoxLayout):
 
     def set_binding(self):
         self.keys = self.parse_input(self.keys_input.text)
-        self.modifiers= self.parse_input(self.modifiers_input.text)
+        self.modifiers = self.parse_input(self.modifiers_input.text)
         self.actions[self.domain][self.action] = [self.keys, self.modifiers]
 
     def parse_input(self, text):
@@ -77,18 +88,20 @@ class BindingItem(BoxLayout):
         text = text.replace(" ", "")
         return text.split(",")
 
+
 class TabItem(TabbedPanelItem):
     def __init__(self, root=None, **kwargs):
         self.root = root
         # use subcontent to handle keybinds for widgets
         # nested somewhere in the tab
         self.sub_content = []
-        super(TabItem , self).__init__(**kwargs)
+        super(TabItem, self).__init__(**kwargs)
+
 
 class BgLabel(Label):
     # label with custom background color
     def __init__(self, **kwargs):
-        super(BgLabel , self).__init__(**kwargs)
+        super(BgLabel, self).__init__(**kwargs)
 
     def on_size(self, *args):
         try:
@@ -98,11 +111,12 @@ class BgLabel(Label):
                 Rectangle(pos=self.pos, size=self.size)
         except AttributeError:
             pass
+
 
 class BgGridLayout(GridLayout):
     # grid layout with custom background color
     def __init__(self, **kwargs):
-        super(BgGridLayout , self).__init__(**kwargs)
+        super(BgGridLayout, self).__init__(**kwargs)
 
     def on_size(self, *args):
         try:
@@ -112,6 +126,7 @@ class BgGridLayout(GridLayout):
                 Rectangle(pos=self.pos, size=self.size)
         except AttributeError:
             pass
+
 
 class TxtPixel(ScrollView):
     def __init__(self, source=None, source_type=None, app=None, **kwargs):
@@ -123,26 +138,25 @@ class TxtPixel(ScrollView):
         self.source = source
         self.source_type = source_type
         self.app = app
-        super(TxtPixel , self).__init__(**kwargs)
+        super(TxtPixel, self).__init__(**kwargs)
         container_height = 4000
         container_width = 4000
         filler_height = 2000
         filler_width = 2000
-        grid_container = FloatLayout(
-                                   size_hint_y=None,
-                                   size_hint_x=None
-                                   )
-        filler = BgLabel(text=source_text(source, source_type), size=(filler_width, filler_height))
+        grid_container = FloatLayout(size_hint_y=None, size_hint_x=None)
+        filler = BgLabel(
+            text=source_text(source, source_type), size=(filler_width, filler_height)
+        )
         # set height to None so text will expand with font size
         # container needs to expand too
         # the texture_size shows correct values as font increases / decreases
-        filler.text_size = filler_width, None #filler_height
+        filler.text_size = filler_width, None  # filler_height
         grid_container.add_widget(filler)
         grid_container.height = container_height
         grid_container.width = container_width
         self.container = grid_container
         self.add_widget(grid_container)
-        filler.pos = 0, 0 #(grid_container.width / 2, grid_container.height / 2)
+        filler.pos = 0, 0  # (grid_container.width / 2, grid_container.height / 2)
 
     def is_mouse_over(self, instance, value):
         if self.collide_point(*value):
@@ -189,13 +203,32 @@ class TxtPixel(ScrollView):
                     # scale line width with zoom / textsize
                     line_width = 100
                     Color(1, 1, 1, .05)
-                    edge_width = c.width / 4
-                    edge_height = c.height / 4
                     # print(c.texture_size, c.center)
-                    Line(points=(0, 0, c.center[0], c.center[1]), width=line_width, group="trace")
-                    Line(points=(self.container.height, 0, c.center[0], c.center[1]), width=line_width, group="trace")
-                    Line(points=(self.container.height, self.container.width, c.center[0], c.center[1]), width=line_width, group="trace")
-                    Line(points=(0, self.container.width, c.center[0], c.center[1]), width=line_width, group="trace")
+                    Line(
+                        points=(0, 0, c.center[0], c.center[1]),
+                        width=line_width,
+                        group="trace",
+                    )
+                    Line(
+                        points=(self.container.height, 0, c.center[0], c.center[1]),
+                        width=line_width,
+                        group="trace",
+                    )
+                    Line(
+                        points=(
+                            self.container.height,
+                            self.container.width,
+                            c.center[0],
+                            c.center[1],
+                        ),
+                        width=line_width,
+                        group="trace",
+                    )
+                    Line(
+                        points=(0, self.container.width, c.center[0], c.center[1]),
+                        width=line_width,
+                        group="trace",
+                    )
 
     def pan_up_left(self):
         if self.mouse_above is True:
@@ -248,6 +281,7 @@ class TxtPixel(ScrollView):
                 self.app.grid.clear_widgets()
                 self.app.grid_load(self.app.previous_grid, previous_grid=current_grid)
 
+
 class ImgPixel(ScrollView):
     def __init__(self, source=None, source_type=None, link_to=None, app=None, **kwargs):
         Window.bind(mouse_pos=self.is_mouse_over)
@@ -260,13 +294,10 @@ class ImgPixel(ScrollView):
         self.source_type = source_type
         self.link_to = link_to
         self.app = app
-        super(ImgPixel , self).__init__(**kwargs)
+        super(ImgPixel, self).__init__(**kwargs)
         container_height = 4000
         container_width = 4000
-        grid_container = FloatLayout(
-                                   size_hint_y=None,
-                                   size_hint_x=None
-                                   )
+        grid_container = FloatLayout(size_hint_y=None, size_hint_x=None)
         if source_type == "file":
             img = Image(source=source)
             # reload cache if thumbnail has changed
@@ -370,6 +401,7 @@ class ImgPixel(ScrollView):
                 self.app.grid.clear_widgets()
                 self.app.grid_load(self.app.previous_grid, previous_grid=current_grid)
 
+
 class GridApp(App):
     def __init__(self, *args, **kwargs):
         self._keyboard = Window.request_keyboard(self._keyboard_closed, self)
@@ -400,7 +432,7 @@ class GridApp(App):
 
         if kwargs["use_db"]:
             self.use_db = True
-            db_settings = {"host" :  kwargs["db_host"], "port" : kwargs["db_port"]}
+            db_settings = {"host": kwargs["db_host"], "port": kwargs["db_port"]}
             self.binary_r = redis.StrictRedis(**db_settings)
             self.redis_conn = redis.StrictRedis(**db_settings, decode_responses=True)
             self.db_port = self.redis_conn.connection_pool.connection_kwargs["port"]
@@ -427,7 +459,9 @@ class GridApp(App):
                     self.root.switch_to(self.root.tab_list[i - 1], do_scroll=True)
                     break
                 else:
-                    self.root.switch_to(self.root.tab_list[len(self.root.tab_list) - 1], do_scroll=True)
+                    self.root.switch_to(
+                        self.root.tab_list[len(self.root.tab_list) - 1], do_scroll=True
+                    )
                     break
 
     def tab_previous(self):
@@ -448,7 +482,7 @@ class GridApp(App):
                         try:
                             getattr(self, "{}".format(k))()
                         except Exception as ex:
-                            #print(ex)
+                            # print(ex)
                             pass
                         # use .content.children for tabs
                         for c in self.root.current_tab.content.children:
@@ -465,7 +499,9 @@ class GridApp(App):
                                     print(ex)
 
                     elif keycode[1] in v[0] and modifiers:
-                        if len(set(v[1]).intersection(set(modifiers))) == len(modifiers):
+                        if len(set(v[1]).intersection(set(modifiers))) == len(
+                            modifiers
+                        ):
                             try:
                                 getattr(self, "{}".format(k))()
                             except Exception as ex:
@@ -499,13 +535,13 @@ class GridApp(App):
         return "{}.png".format(self.grid_hash)
 
     def file_bytes(self, filename, delete_file=False):
-            contents = io.BytesIO()
+        contents = io.BytesIO()
 
-            with open(filename, "rb") as f:
-                contents = io.BytesIO(f.read())
+        with open(filename, "rb") as f:
+            contents = io.BytesIO(f.read())
 
-            contents = contents.getvalue()
-            return contents
+        contents = contents.getvalue()
+        return contents
 
     def db_save(self, thumbnail_filename, grid_hash):
         slurped = []
@@ -520,12 +556,12 @@ class GridApp(App):
 
         glworb = {}
         if self.session_uuid is None:
-            glworb['uuid'] = grid_hash
+            glworb["uuid"] = grid_hash
         else:
-            glworb['uuid'] = self.session_uuid
-        glworb['binary_key'] = blob_uuid
-        glworb['created'] = str(datetime.datetime.now())
-        glworb['slurp_method'] = "grids"#self.slurp_method
+            glworb["uuid"] = self.session_uuid
+        glworb["binary_key"] = blob_uuid
+        glworb["created"] = str(datetime.datetime.now())
+        glworb["slurp_method"] = "grids"  # self.slurp_method
         # try:
         #     glworb['slurp_source_uid'] = device['uid']
         #     glworb['slurp_source_name'] =  device['name']
@@ -533,7 +569,7 @@ class GridApp(App):
         #     pass
         # for k, v in metadata.items():
         #     glworb[k] = v
-        glworb_uuid = "glworb:{}".format(glworb['uuid'])
+        glworb_uuid = "glworb:{}".format(glworb["uuid"])
         self.redis_conn.hmset(glworb_uuid, glworb)
         slurped.append(glworb_uuid)
         return slurped
@@ -602,7 +638,12 @@ class GridApp(App):
                     thumbnail = None
                     if element.attrib["source"].endswith(".xml"):
                         thumbnail = None
-                        thumbnail = str(pathlib.PurePath(self.data_dir, element.attrib["source"].replace(".xml", ".png")))
+                        thumbnail = str(
+                            pathlib.PurePath(
+                                self.data_dir,
+                                element.attrib["source"].replace(".xml", ".png"),
+                            )
+                        )
                         source_type = "file"
                         if not os.path.isfile(thumbnail):
                             # generate a thumbnail representation with PIL
@@ -611,40 +652,55 @@ class GridApp(App):
                             source_type = "bytes"
 
                         if thumbnail:
-                            cells.insert(int(element.attrib["position"]),
-                                            ImgPixel(source=thumbnail,
-                                                     source_type=source_type,
-                                                     link_to=element.attrib["source"],
-                                                     scroll_x=element.attrib["scroll_x"],
-                                                     scroll_y=element.attrib["scroll_y"],
-                                                     app=self))
+                            cells.insert(
+                                int(element.attrib["position"]),
+                                ImgPixel(
+                                    source=thumbnail,
+                                    source_type=source_type,
+                                    link_to=element.attrib["source"],
+                                    scroll_x=element.attrib["scroll_x"],
+                                    scroll_y=element.attrib["scroll_y"],
+                                    app=self,
+                                ),
+                            )
                         else:
-                            cells.insert(int(element.attrib["position"]),
-                                                TxtPixel(source=element.attrib["source"],
-                                                         source_type=element.attrib["source_type"],
-                                                         scroll_x=element.attrib["scroll_x"],
-                                                         scroll_y=element.attrib["scroll_y"],
-                                                         app=self)
-                                                )
-                    elif element.attrib["source"].lower().endswith(".png")     \
-                         or element.attrib["source"].lower().endswith(".jpg")  \
-                         or element.attrib["source"].lower().endswith(".jpeg") \
-                         or element.attrib["source"].lower().endswith(".gif"):
-                        cells.insert(int(element.attrib["position"]),
-                                            ImgPixel(source=element.attrib["source"],
-                                                     source_type=element.attrib["source_type"],
-                                                     scroll_x=element.attrib["scroll_x"],
-                                                     scroll_y=element.attrib["scroll_y"],
-                                                     app=self)
-                                            )
+                            cells.insert(
+                                int(element.attrib["position"]),
+                                TxtPixel(
+                                    source=element.attrib["source"],
+                                    source_type=element.attrib["source_type"],
+                                    scroll_x=element.attrib["scroll_x"],
+                                    scroll_y=element.attrib["scroll_y"],
+                                    app=self,
+                                ),
+                            )
+                    elif (
+                        element.attrib["source"].lower().endswith(".png")
+                        or element.attrib["source"].lower().endswith(".jpg")
+                        or element.attrib["source"].lower().endswith(".jpeg")
+                        or element.attrib["source"].lower().endswith(".gif")
+                    ):
+                        cells.insert(
+                            int(element.attrib["position"]),
+                            ImgPixel(
+                                source=element.attrib["source"],
+                                source_type=element.attrib["source_type"],
+                                scroll_x=element.attrib["scroll_x"],
+                                scroll_y=element.attrib["scroll_y"],
+                                app=self,
+                            ),
+                        )
                     else:
-                        cells.insert(int(element.attrib["position"]),
-                                            TxtPixel(source=element.attrib["source"],
-                                                     source_type=element.attrib["source_type"],
-                                                     scroll_x=element.attrib["scroll_x"],
-                                                     scroll_y=element.attrib["scroll_y"],
-                                                     app=self)
-                                            )
+                        cells.insert(
+                            int(element.attrib["position"]),
+                            TxtPixel(
+                                source=element.attrib["source"],
+                                source_type=element.attrib["source_type"],
+                                scroll_x=element.attrib["scroll_x"],
+                                scroll_y=element.attrib["scroll_y"],
+                                app=self,
+                            ),
+                        )
             except Exception as ex:
                 print(ex)
 
@@ -679,7 +735,7 @@ class GridApp(App):
 
         tab = TabItem(text="grid", root=root)
         tab.tab_name = "grid"
-        # testing grid 2x2 with some 
+        # testing grid 2x2 with some
         # filler content
         # could wrap in scrollview too...
         rows = math.ceil(len(self.files) / 2)
@@ -689,8 +745,7 @@ class GridApp(App):
         if len(self.files) == 2:
             cols += 1
 
-        g = BgGridLayout(rows=rows,
-                       cols=cols)
+        g = BgGridLayout(rows=rows, cols=cols)
         self.grid = g
         for file in self.files:
             if file.endswith(".xml") and len(self.files) == 1:
@@ -703,9 +758,13 @@ class GridApp(App):
                     if isinstance(element.tag, str):
                         # try to use
                         try:
-                            thumbnail = str(pathlib.PurePath(self.data_dir, element.attrib["thumbnail"]))
+                            thumbnail = str(
+                                pathlib.PurePath(
+                                    self.data_dir, element.attrib["thumbnail"]
+                                )
+                            )
                             source_type = "file"
-                        except:
+                        except Exception as ex:
                             # generate a thumbnail representation with PIL
                             thumbnail = grid_representation_img(file_root)
                             source_type = "bytes"
@@ -713,16 +772,31 @@ class GridApp(App):
                 # check if grid
                 # if grid try to get thumbnail
                 if thumbnail:
-                    self.grid.add_widget(ImgPixel(source=thumbnail, source_type=source_type, link_to=file, app=self))
+                    self.grid.add_widget(
+                        ImgPixel(
+                            source=thumbnail,
+                            source_type=source_type,
+                            link_to=file,
+                            app=self,
+                        )
+                    )
                 else:
-                    self.grid.add_widget(TxtPixel(source=file, source_type="file", app=self))
-            elif file.lower().endswith(".png")     \
-                 or file.lower().endswith(".jpg")  \
-                 or file.lower().endswith(".jpeg") \
-                 or file.lower().endswith(".gif"):
-                self.grid.add_widget(ImgPixel(source=file, source_type="file", app=self))
+                    self.grid.add_widget(
+                        TxtPixel(source=file, source_type="file", app=self)
+                    )
+            elif (
+                file.lower().endswith(".png")
+                or file.lower().endswith(".jpg")
+                or file.lower().endswith(".jpeg")
+                or file.lower().endswith(".gif")
+            ):
+                self.grid.add_widget(
+                    ImgPixel(source=file, source_type="file", app=self)
+                )
             else:
-                self.grid.add_widget(TxtPixel(source=file, source_type="file", app=self))
+                self.grid.add_widget(
+                    TxtPixel(source=file, source_type="file", app=self)
+                )
 
         tab.add_widget(g)
         root.add_widget(tab)
@@ -731,15 +805,15 @@ class GridApp(App):
         Clock.schedule_once(lambda x, tab=tab: self.center_cells(tab), 1)
         Clock.schedule_interval(lambda dt: self.grid_save(), self.save_interval)
 
-        bindings_container = BoxLayout(orientation="vertical",
-                                       size_hint_y=None,
-                                       )
+        bindings_container = BoxLayout(orientation="vertical", size_hint_y=None)
 
         actions = 0
         for domain, domain_actions in self.actions.items():
             bindings_container.add_widget(Label(text=str(domain), height=40))
             for action, action_bindings in domain_actions.items():
-                binding_widget = BindingItem(domain, action, action_bindings, self.actions, height=40)
+                binding_widget = BindingItem(
+                    domain, action, action_bindings, self.actions, height=40
+                )
                 bindings_container.add_widget(binding_widget)
                 actions += 1
         # set height for scrollview
@@ -754,6 +828,7 @@ class GridApp(App):
 
         return root
 
+
 def source_text(source=None, source_type=None):
     contents = ""
     if source_type == "file" and os.path.isfile(source):
@@ -761,15 +836,16 @@ def source_text(source=None, source_type=None):
             with open(source, "r") as f:
                 contents = f.read()
         except TypeError:
-                pass
+            pass
 
     return contents
+
 
 def grid_representation_img(grid_xml):
     cells = []
     img_cell_width = 200
     img_cell_height = 200
-    img_background_color=(0, 0, 0, 255)
+    img_background_color = (0, 0, 0, 255)
 
     for grid in grid_xml.iter("grid"):
         for cell in grid.iter("cell"):
@@ -780,15 +856,22 @@ def grid_representation_img(grid_xml):
     img_width = img_cols * img_cell_width
     img_height = img_rows * img_cell_height
 
-    representation_img = PILImage.new('RGB', (img_width, img_height), img_background_color)
-    draw = ImageDraw.Draw(representation_img, 'RGBA')
+    representation_img = PILImage.new(
+        "RGB", (img_width, img_height), img_background_color
+    )
+    draw = ImageDraw.Draw(representation_img, "RGBA")
     x = 0
     y = 0
-    row = 0
+    # row = 0
     col = 0
     for cell in cells:
-        draw.rectangle([x, y, x + img_cell_width, y + img_cell_height], outline=(255, 255, 255, 255))
-        draw.text((x + int(img_cell_width / 4), y + int(img_cell_height / 2)), str(cell))
+        draw.rectangle(
+            [x, y, x + img_cell_width, y + img_cell_height],
+            outline=(255, 255, 255, 255),
+        )
+        draw.text(
+            (x + int(img_cell_width / 4), y + int(img_cell_height / 2)), str(cell)
+        )
         col += 1
         if col > img_cols:
             y += img_cell_width
@@ -796,23 +879,30 @@ def grid_representation_img(grid_xml):
             col = 0
         else:
             x += img_cell_width
-    #representation_img.show()
+    # representation_img.show()
 
     file = io.BytesIO()
-    extension = 'JPEG'
+    extension = "JPEG"
     representation_img.save(file, extension)
     representation_img.close()
     file.seek(0)
 
     return file
 
+
 def main():
     files = []
     parser = argparse.ArgumentParser()
-    parser.add_argument('files', nargs='+')
-    parser.add_argument("--use-db",  action="store_true", help="save grids to db in a machinic format")
-    parser.add_argument("--unique-session",  action="store_true", help="assign db grids a unique uuid instead of grid hash")
-    parser.add_argument("--db-host",  default="127.0.0.1", help="db host ip")
+    parser.add_argument("files", nargs="+")
+    parser.add_argument(
+        "--use-db", action="store_true", help="save grids to db in a machinic format"
+    )
+    parser.add_argument(
+        "--unique-session",
+        action="store_true",
+        help="assign db grids a unique uuid instead of grid hash",
+    )
+    parser.add_argument("--db-host", default="127.0.0.1", help="db host ip")
     parser.add_argument("--db-port", default="6379", type=int, help="db port")
 
     args = parser.parse_args()
