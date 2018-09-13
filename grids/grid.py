@@ -203,8 +203,8 @@ class TxtPixel(ScrollView):
                     # scale line width with zoom / textsize
                     line_width = 100
                     Color(1, 1, 1, .05)
-                    edge_width = c.width / 4
-                    edge_height = c.height / 4
+                    # edge_width = c.width / 4
+                    # edge_height = c.height / 4
                     # print(c.texture_size, c.center)
                     Line(
                         points=(0, 0, c.center[0], c.center[1]),
@@ -766,7 +766,7 @@ class GridApp(App):
                                 )
                             )
                             source_type = "file"
-                        except:
+                        except Exception as ex:
                             # generate a thumbnail representation with PIL
                             thumbnail = grid_representation_img(file_root)
                             source_type = "bytes"
@@ -864,7 +864,7 @@ def grid_representation_img(grid_xml):
     draw = ImageDraw.Draw(representation_img, "RGBA")
     x = 0
     y = 0
-    row = 0
+    # row = 0
     col = 0
     for cell in cells:
         draw.rectangle(
