@@ -4,7 +4,6 @@
 #
 # Copyright (c) 2018, Galen Curwen-McAdams
 
-
 def keybindings():
     actions = {}
     # app always handled
@@ -30,5 +29,6 @@ def keybindings():
     actions["grid"]["pan_right"] = [["f"], []]
     actions["grid"]["punch_in"] = [["e"], ["shift"]]
     actions["grid"]["punch_out"] = [["d"], ["shift"]]
+
 
     return actions
